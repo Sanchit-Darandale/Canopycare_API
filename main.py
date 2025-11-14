@@ -43,7 +43,7 @@ async def ai_endpoint(request: Request):
             user_text = body.get("text") if body else None
             sp = body.get("system_prompt") if body else None
 
-        if not user_text and not sp:
+        if not user_text or not sp:
             return JSONResponse({"error": "No text / system prompt provided"}, status_code=400)
 
         reply = get_response(sp, user_text)
