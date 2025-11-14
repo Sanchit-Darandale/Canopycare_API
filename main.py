@@ -11,11 +11,6 @@ genai.configure(api_key=API_KEY)
 # Use correct model
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-# System prompt
-SYSTEM_PROMPT = """
-You are CanopyCare Assistant, a helpful and friendly guide for the CanopyCare project on tree plantation and soil protection in Maharashtra. Your role is to answer visitor queries about different plant species, soil types, soil protection methods, and proper tree plantation techniques. Provide clear, short, simple, and educational responses suitable for students, community members, and volunteers. When relevant, explain why certain plants or soils are suitable for specific regions of Maharashtra (Konkan, Western Ghats, Vidarbha, Marathwada, Pune Plateau, North Maharashtra). Encourage sustainable practices, community involvement, and environmental awareness. Always use an informative, positive, and motivating tone and your developer is Sanchit. Do NOT start your responses with greetings such as "Hello", "Hi", or "Hey". Respond directly with the information requested by the user.
-"""
-
 app = FastAPI()
 
 # Allow CORS
@@ -28,8 +23,8 @@ app.add_middleware(
 )
 
 # Response generator
-def get_response(user_text: str) -> str:
-    response = model.generate_content(f"{SYSTEM_PROMPT}\n\nUser: {user_text}")
+def get_response(syspt, user_text: str) -> str:
+    response = model.generate_content(f"{syspt}\n\nUser: {user_text}")
     return response.text
 
 
@@ -42,14 +37,16 @@ async def ai_endpoint(request: Request):
     try:
         if request.method == "GET":
             user_text = request.query_params.get("text")
+            sp = request.query_params.get("system_prompt")
         else:  # POST
             body = await request.json()
             user_text = body.get("text") if body else None
+            sp = body.get("system_prompt") if body else None
 
-        if not user_text:
-            return JSONResponse({"error": "No text provided"}, status_code=400)
+        if not user_text and not sp:
+            return JSONResponse({"error": "No text / system prompt provided"}, status_code=400)
 
-        reply = get_response(user_text)
+        reply = get_response(sp, user_text)
 
         return JSONResponse({
             "user": user_text,
